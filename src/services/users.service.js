@@ -35,8 +35,8 @@ async function deleteUser(id) {
 }
 
 async function getUNique(email, username){
-    const already_exist = await Prisma.user.findUnique({
-        where: { email: email , username: username},
+    const already_exist = await Prisma.user.findFirst({
+        where: { OR: [{ email: email }, { username: username }] },
       });
     return already_exist
 }

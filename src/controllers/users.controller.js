@@ -7,19 +7,19 @@ const {
     getUNique
 } = require('../services/users.service');
 
-const create = (req, res) => {
+const create = async (req, res) => {
   const {username, email, fullname, bio} = req.body;
   if (!username || !email || !fullname){
     res.status(400).json({ "error": "username, email and fullname are required" });
     return;
   }
 
-  const already_exist = getUNique(email, username);
+  const already_exist = await getUNique(email, username);
 
   if (already_exist) {
     res.status(409).json({ "error": "username or email already taken" });    
   }else{
-    const new_user = createUser({
+    const new_user = await createUser({
         username: username,
         email: email,
         fullname: fullname,
@@ -30,14 +30,14 @@ const create = (req, res) => {
 
 };
 
-const list = (req, res) => {
-    const all_users = listUsers();
+const list = async (req, res) => {
+    const all_users = await listUsers();
     res.status(200).json(all_users);
 };
 
-const getOne = (req, res) => {
+const getOne = async (req, res) => {
     const id = parseInt(req.params.id)
-    const user = getUserById(id)
+    const user = await getUserById(id)
     
       if (user) {
         res.status(200).json(user);
@@ -47,18 +47,18 @@ const getOne = (req, res) => {
 
 }
 
-const update = (req, res) => {
+const update = async (req, res) => {
     const id = parseInt(req.params.id);
       const { fullname, bio, isPrivate } = req.body;
     
-      const user = getUserById(id)
+      const user = await getUserById(id)
     
       if (!user) {
         res.status(404).json({ error: "User not found" });
         return;
       }
     
-      const updated_user = updateUser(id, {
+      const updated_user = await updateUser(id, {
           ...(fullname !== undefined && { fullname }),
           ...(bio !== undefined && { bio }),
           ...(isPrivate !== undefined && { isPrivate })
@@ -68,17 +68,17 @@ const update = (req, res) => {
 
 }
 
-const remove = (req, res) => {
+const remove = async (req, res) => {
     const id = parseInt(req.params.id);
     
-      const user = getUNique(id)
+      const user = await getUserById(id)
     
       if (!user) {
         res.status(404).json({ error: "User not found" });
         return;
       }
     
-      deleteUser(id)
+      await deleteUser(id)
     
       res.status(204).send();
 }

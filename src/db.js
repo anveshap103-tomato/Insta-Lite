@@ -12,4 +12,4 @@ const Prisma = new PrismaClient({
     adapter: pg
 });
 
-module.exports = {Prisma}
+module.exports = Prisma;

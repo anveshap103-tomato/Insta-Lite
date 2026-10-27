@@ -1,5 +1,4 @@
 const express = require('express');
-const Prisma = require("../db");
 const router = express.Router();
 const {
     create,
@@ -10,14 +9,14 @@ const {
 } = require('../controllers/users.controller')
 
 
-router.get('/users', list)
+router.get('/', list)
 
-router.post('/users', create)
+router.post('/', create)
 
-router.get('/user/:id', getOne)
+router.get('/:id', getOne)
 
-router.patch('/users/:id', update);
+router.patch('/:id', update);
 
-router.delete('/users/:id', remove);
+router.delete('/:id', remove);
 
 module.exports = router;
