@@ -1,51 +1,72 @@
 const Prisma = require("../db");
 
-async function createUser(data){
-    const new_user = await Prisma.user.create({
-          data: data
-    })
-    return new_user 
-};
-
-async function listUsers() {
-    const all_users = await Prisma.user.findMany();
-    return all_users
+async function createUser(data) {
+    return Prisma.user.create({ data });
 }
 
-async function getUserById(id){
-    const user = await Prisma.user.findUnique({
-        where: { id: id }
-    })
-    return user 
+async function listUsers({ page, limit, sortBy, order, isPrivate, search, hasPosts }) {
+    const where = {};
+
+    if (isPrivate !== undefined) where.isPrivate = isPrivate;
+
+    if (search) {
+        where.OR = [
+            { username: { contains: search, mode: 'insensitive' } },
+            { fullname: { contains: search, mode: 'insensitive' } }
+        ];
+    }
+
+    if (hasPosts !== undefined) {
+        where.posts = hasPosts ? { some: {} } : { none: {} };
+    }
+
+    const [users, total] = await Prisma.$transaction([
+        Prisma.user.findMany({
+            where,
+            orderBy: { [sortBy]: order },
+            skip: (page - 1) * limit,
+            take: limit
+        }),
+        Prisma.user.count({ where })
+    ]);
+
+    return { data: users, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 }
 
-async function updateUser(id, data){
-    const updated_user = await Prisma.user.update({
-        where: { id: id },
-        data: data
+async function getUserById(id) {
+    return Prisma.user.findUnique({
+        where: { id },
+        include: { _count: { select: { posts: true, likes: true } } }
     });
+}
 
-    return updated_user;
+async function updateUser(id, data) {
+    return Prisma.user.update({ where: { id }, data });
 }
 
 async function deleteUser(id) {
-    await Prisma.user.delete({
-        where: { id: id }
+    await Prisma.user.delete({ where: { id } });
+}
+
+async function getUNique(email, username) {
+    return Prisma.user.findFirst({
+        where: { OR: [{ email }, { username }] }
     });
 }
 
-async function getUNique(email, username){
-    const already_exist = await Prisma.user.findFirst({
-        where: { OR: [{ email: email }, { username: username }] },
-      });
-    return already_exist
+async function getUserPosts(id, { page, limit }) {
+    const where = { authorId: id };
+    const [posts, total] = await Prisma.$transaction([
+        Prisma.post.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip: (page - 1) * limit,
+            take: limit,
+            include: { _count: { select: { likes: true } } }
+        }),
+        Prisma.post.count({ where })
+    ]);
+    return { data: posts, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 }
 
-module.exports = {
-    createUser,
-    listUsers,
-    getUserById,
-    updateUser,
-    deleteUser,
-    getUNique
-};
+module.exports = { createUser, listUsers, getUserById, updateUser, deleteUser, getUNique, getUserPosts };
